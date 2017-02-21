@@ -1,0 +1,24 @@
+Requirements
+1 point = 1 percent. Standard IT567 Grading Scale (75 = A)
+
+At a minimum your tool should (40 points):
+	1. Allow command-line switches to specify a host and port.
+	2. Present a simple response to the user.
+
+Additional points are provided depending on the comprehensiveness of the feature. For example
+
+ Allow more than one host to be scanned – 10 points maximum.
+	o Reading a text file of host IP’s or reading a range from the command line – 5 points.
+ Doing both +2 points
+	o Allowing different ways to specify hosts (subnet mask and range) – 5 points.
+ Allow multiple ports to be specified – 10 points maximum.
+ Use of more than one protocol (TCP or UDP is assumed within the base 40 points)
+	o ICMP 5 points
+	o TCP or UDP (to complement the one already provided) – 10 points
+ Traceroute – Max 5 points
+ User experience results – eg. An HTML or PDF report:
+	o Max 10 points
+ GUI or Web management of tool
+	o Max 10 points
+ Other ideas or concepts not mentioned
+	o Max 20 points
