@@ -16,7 +16,7 @@ def main():
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p", ["help", "output=", "target=", "port="])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:", ["help", "output=", "target=", "port="])
         # Intro message
         print "Hello!"
         print "Welcome to this port scanner"
@@ -39,20 +39,26 @@ def main():
             output = a
         elif o in ("-t", "--target"):
             target = a
-            print target
+            # print target
         elif o in ("-p", "--port"):
             port = a
-            print port
+            # print port
         else:
             assert False, "unhandled option"
     # ...
     print "Starting scan"
+    # print target
+    # print port
     tcp_scan(target, port)
 
 def tcp_scan(given_target, given_port):
     dst_ip = given_target
-    src_port = RandShort()
+    # src_port = RandShort()
+    src_port = 0
     dst_port= given_port
+    print "Variables:\n " + dst_ip 
+    print "src_port: " + str(src_port)
+    print "dst_port: " + dst_port
     tcp_connect_scan_resp = sr1(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="S"),timeout=10)
     if(str(type(tcp_connect_scan_resp))=="<type 'NoneType'>"):
         print "Closed"
@@ -66,3 +72,11 @@ def tcp_scan(given_target, given_port):
 
 if __name__ == "__main__":
     main()
+
+
+# more things to implement:
+#   dig
+#   arp?
+#   ping
+#   
+
