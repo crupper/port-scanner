@@ -11,7 +11,9 @@ from time import strftime
 
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ho:v", ["help", "output="])
+        # To add an option, add the short options to the list and add a ":" or a "="
+        # to signal that there is additional input is expected
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:", ["help", "output=", "target="])
         # Intro message
         print "Hello!"
         print "Welcome to this port scanner"
@@ -32,11 +34,14 @@ def main():
             sys.exit()
         elif o in ("-o", "--output"):
             output = a
+        elif o in ("-t", "--target"):
+            target = a
+            print target
         else:
             assert False, "unhandled option"
     # ...
     # Take in arguments
-    print "Starting scan of " + sys.argv[1]
+    print "Starting scan"
 
 if __name__ == "__main__":
     main()
