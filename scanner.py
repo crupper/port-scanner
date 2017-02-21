@@ -10,10 +10,13 @@ from time import strftime
 
 
 def main():
+    # Defaults:
+    target = "127.0.0.1"
+    port = 80
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:", ["help", "output=", "target="])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p", ["help", "output=", "target=", "port="])
         # Intro message
         print "Hello!"
         print "Welcome to this port scanner"
@@ -37,11 +40,29 @@ def main():
         elif o in ("-t", "--target"):
             target = a
             print target
+        elif o in ("-p", "--port"):
+            port = a
+            print port
         else:
             assert False, "unhandled option"
     # ...
-    # Take in arguments
     print "Starting scan"
+    tcp_scan(target, port)
+
+def tcp_scan(given_target, given_port):
+    dst_ip = given_target
+    src_port = RandShort()
+    dst_port= given_port
+    tcp_connect_scan_resp = sr1(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="S"),timeout=10)
+    if(str(type(tcp_connect_scan_resp))=="<type 'NoneType'>"):
+        print "Closed"
+    elif(tcp_connect_scan_resp.haslayer(TCP)):
+        if(tcp_connect_scan_resp.getlayer(TCP).flags == 0x12):
+            send_rst = sr(IP(dst=dst_ip)/TCP(sport=src_port,dport=dst_port,flags="AR"),timeout=10)
+            print "Open"
+    elif (tcp_connect_scan_resp.getlayer(TCP).flags == 0x14):
+        print "Closed"
+
 
 if __name__ == "__main__":
     main()
