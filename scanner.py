@@ -18,7 +18,7 @@ def main():
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:iV", ["help", "output=", "target=", "port=", "info", "version"])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:V", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test="])
         # Intro message
         print "Hello!"
         print "Welcome to this port scanner"
@@ -46,9 +46,14 @@ def main():
         elif o in ("-p", "--port"):
             port = a
             # print port
-        elif o in ("-i", "--info"):
-            print target
-            print port
+        elif o in ("-i", "--icmp_sweep"):
+            #print target
+            #print port
+            ping_sweep(a)
+            sys.exit()
+        elif o in ("--test"):
+            create_list_of_hosts(a)
+            sys.exit()
         else:
             assert False, "unhandled option"
     # ...
@@ -117,14 +122,18 @@ def checkhost(ip): # Function to check if target is up
 
 def icmp_ping(host):
     ''' ICMP Ping '''
-
+    print "Host to Ping: " + host
     # Classical ICMP Ping can be emulated using the following command:
     ans, unans = sr(IP(dst=host)/ICMP())
 
     # Information on live hosts can be collected with the following request:
     ans.summary(lambda (s, r): r.sprintf("%IP.src% is alive"))
 
-
+def ping_sweep(target_subnet):
+    # this takes the subnet, and runs a ping on each host in that subnet
+    hostlist = create_list_of_hosts(target_subnet)
+    for host in hostlist:
+        icmp_ping(host)
 
 def traceroute(hostname):
     for i in range(1, 28):
@@ -142,13 +151,52 @@ def traceroute(hostname):
             # We're in the middle somewhere
             print "%d hops away: " % i , reply.src
 
+def find_max_octet(octet):
+    if octet == "24":
+        return "255"
+    elif octet == "25":
+        return "127"
+    elif octet == "26":
+        return "63"
+    elif octet == "27":
+        return "31"
+    elif octet == "28":
+        return "15"
+    elif octet == "29":
+        return "7"
+    elif octet == "30":
+        return "3"
+    elif octet == "31":
+        return "1"
+    elif octet =="32":
+        return "0"
+
+def create_list_of_hosts(host_with_subnet):
+    subnet = host_with_subnet.split("/")
+    print subnet
+    splitter = subnet[0].split(".")
+    init_string = splitter[0]+"."+splitter[1]+"."+splitter[2]+"."
+    print "init_string = " + init_string
+    tail_octet = 0
+    max_octet = int(find_max_octet(subnet[1]))
+    print subnet[0]
+    print subnet[1]
+    hostlist = []
+    for x in range(int(splitter[3]),max_octet+1):
+        hostlist.append(init_string+str(x))
+
+    #testing:
+    for host in hostlist:
+        print host
+    return hostlist
+  
 
 def print_help_message():
   print """Options:\n
 -h\t\tHelp Message
 -t\t\tTarget- enter the IP adress to scan
 -p\t\tPort- enter the port to scan
--i\t\tInformation- print target and port
+-i\t\tICMP Sweep- Will do a ping sweep on the subnet to find hosts
 -v\t\tVerbose- gives added output
 -V\t\tVersion- print the version of this port scanner
 """
