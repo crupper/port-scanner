@@ -4,3 +4,4 @@ Options:
 
 Scapy:
 	http://resources.infosecinstitute.com/port-scanning-using-scapy/#gref
+    Kali Linux Network Scanning Cookbook by Justin Hutchens

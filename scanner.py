@@ -35,7 +35,7 @@ def main():
             verbose = True
         elif o in ("-h", "--help"):
             # usage()
-            print "Help: "
+            print_help_message()
             sys.exit()
         elif o in ("-V", "--version"):
             print "Version 0.0.1"
@@ -59,6 +59,7 @@ def main():
 #        icmp_ping(target)
 #       checkhost(target)
         stealth_scan(target, port)
+        udp_scan(target,port)
 #        traceroute(hostname)
     else:
         print "Error" 
@@ -93,6 +94,15 @@ def stealth_scan(given_target, given_port):
         else:
             print "closed"
             pass
+
+def udp_scan(given_target, given_port):
+    ans = sr1(IP(dst=given_target) /UDP(dport = int(given_port)), timeout=5,verbose=0)
+    time.sleep(1)
+    if ans == None:
+        print given_port + " is open"
+    else:
+        pass
+
 
 def checkhost(ip): # Function to check if target is up
         conf.verb = 0 # Hide output
@@ -133,7 +143,15 @@ def traceroute(hostname):
             print "%d hops away: " % i , reply.src
 
 
-
+def print_help_message():
+  print """Options:\n
+-h\t\tHelp Message
+-t\t\tTarget- enter the IP adress to scan
+-p\t\tPort- enter the port to scan
+-i\t\tInformation- print target and port
+-v\t\tVerbose- gives added output
+-V\t\tVersion- print the version of this port scanner
+"""
 
 if __name__ == "__main__":
     main()
