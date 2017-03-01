@@ -15,14 +15,16 @@ def main():
     port = 80
     localhost = "127.0.0.1"
     hostname = "www.byu.edu"
+    if len(sys.argv) == 1:
+        print "Welcome to Chris Rupper's Port Scanner"
+        print "Please use the \'-h\' option for usage information!"
+        sys.exit()
+
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
         opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:V", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test="])
         # Intro message
-        print "Hello!"
-        print "Welcome to this port scanner"
-
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -57,18 +59,18 @@ def main():
         else:
             assert False, "unhandled option"
     # ...
+    # Basically main begins here:
     print "Starting scan"
-    # print target
-    # print port
+
     if (target != localhost):
 #        icmp_ping(target)
 #       checkhost(target)
-        stealth_scan(target, port)
+#        stealth_scan(target, port)
         udp_scan(target,port)
 #        traceroute(hostname)
     else:
-        print "Error" 
-        print "Please enter the target IP and Port!"
+        print "Error! Improper use of arguments!" 
+        print "Please view \'-h\' for usage information."
 
 def tcp_scan(given_target, given_port):
     dst_ip = given_target
@@ -192,6 +194,8 @@ def create_list_of_hosts(host_with_subnet):
   
 
 def print_help_message():
+  print "To use the full capabilities of this program, please run as root!"
+  print
   print """Options:\n
 -h\t\tHelp Message
 -t\t\tTarget- enter the IP adress to scan

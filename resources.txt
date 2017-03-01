@@ -5,3 +5,4 @@ Options:
 Scapy:
 	http://resources.infosecinstitute.com/port-scanning-using-scapy/#gref
     Kali Linux Network Scanning Cookbook by Justin Hutchens
+    https://securitylair.wordpress.com/2014/02/21/simple-port-scanner-in-python-with-scapy-2/
