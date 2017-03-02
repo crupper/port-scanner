@@ -19,11 +19,10 @@ def main():
         print "Welcome to Chris Rupper's Port Scanner"
         print "Please use the \'-h\' option for usage information!"
         sys.exit()
-
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VT", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single"])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VTr:", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single", "pl="])
         # Intro message
     except getopt.GetoptError as err:
         # print help information and exit:
@@ -31,15 +30,17 @@ def main():
         # usage()
         sys.exit(2)
     output = None
-    verbose = False
     stealth = False
     udp_option = False
     tracert = False
     check = False
     single_target = False
+    single_port = False
+    rangeIsGiven = False
+    portRangeIsGiven = False
     for o, a in opts:
         if o == "-v":
-            verbose = True
+            print "Verbosity has yet to be implemeted"
         elif o in ("-h", "--help"):
             print_help_message()
             sys.exit()
@@ -50,9 +51,8 @@ def main():
             target = a
         elif o in ("-p", "--port"):
             port = a
+            single_port = True
         elif o in ("-i", "--icmp_sweep"):
-            #print target
-            #print port
             ping_sweep(a)
             sys.exit()
         elif o in ("--test"):
@@ -69,9 +69,19 @@ def main():
             check = True
         elif o in ("--single"):
             single_target = True
+        elif o in ("-r"):
+            rangeIsGiven = True
+            host_range = a
+        elif o in ("--pl"):
+            raw_pl = a
+            portRangeIsGiven = True
         else:
             assert False, "unhandled option"
     # Basically main begins here:
+    # One Port of Many?
+    the_portlist = []
+    if portRangeIsGiven:
+        the_portlist = create_list_of_ports(raw_pl)
     #Single Targets
     if single_target:
         if (target != localhost):
@@ -79,9 +89,15 @@ def main():
                 checkhost(target)
                 sys.exit()
             if stealth:
-                stealth_scan(target, port)
+                if single_port:
+                    stealth_scan(target, port)
+                else:
+                    handle_stealth_scan(target,the_portlist)
             if udp_option:
-                udp_scan(target,port)
+                if single_port:
+                    udp_scan(target,port)
+                else:
+                    handle_udp_scan(target, the_portlist)
             if tracert:
                 traceroute(hostname)
         else:
@@ -89,10 +105,27 @@ def main():
             print "Please view \'-h\' for usage information."
     else:
     #Range of Targets
-        the_hostlist = create_list_of_hosts(target)
+        if rangeIsGiven:
+            the_hostlist = create_range_list(host_range)
+        else:
+            the_hostlist = create_list_of_hosts(target)
         if stealth:
             for host in the_hostlist:
-                stealth_scan(host, port)
+                if single_port:
+                    stealth_scan(host, port)
+                else:
+                    handle_stealth_scan(host,the_portlist)
+
+        if udp_option:
+            for host in the_hostlist:
+                if single_port:
+                    udp_scan(host, port)
+                else:
+                    handle_udp_scan(host, the_portlist)
+
+        if tracert:
+            for host in the_hostlist:
+                traceroute(host)
 
 
 # Functions
@@ -122,19 +155,26 @@ def stealth_scan(given_target, given_port):
         pass
     else:
         if int(ans[TCP].flags) ==18:
-            print given_port + " is open"
+            print given_port + " is open on " + given_target
         else:
-            print "closed"
+            print given_port + " is closed on "+ given_target
             pass
+
+def handle_stealth_scan(host,portlist):
+    for port in portlist:
+        stealth_scan(host, port)
 
 def udp_scan(given_target, given_port):
     ans = sr1(IP(dst=given_target) /UDP(dport = int(given_port)), timeout=5,verbose=0)
     time.sleep(1)
     if ans == None:
-        print given_port + " is open"
+        print given_port + " is open on "+ given_target
     else:
         pass
 
+def handle_udp_scan(host, portlist):
+    for port in portlist:
+        udp_scan(host, port)
 
 def checkhost(ip): # Function to check if target is up
     ping_host(ip)
@@ -214,19 +254,49 @@ def create_list_of_hosts(host_with_subnet):
 
     return hostlist
   
+def create_range_list(range_of_hosts):
+    #Expected input: 192.168.207.41-42
+    hostlist = []
+    ip_split = range_of_hosts.split("-")
+    # print ip_split[0] + " and " + ip_split[1]
+    splitter = ip_split[0].split(".")
+    init_string = splitter[0]+"."+splitter[1]+"."+splitter[2]+"."
+    for x in range(int(splitter[3]),int(ip_split[1])+1):
+        hostlist.append(init_string+str(x))
+    print hostlist
+    return hostlist
+
+def create_list_of_ports(raw_pl):
+    #Expected input: 1-1000
+    portlist = []
+    portEnds = raw_pl.split("-")
+    for x in range(int(portEnds[0]),int(portEnds[1])+1):
+        portlist.append(str(x))
+    print portlist
+    return portlist
 
 def print_help_message():
   print "To use the full capabilities of this program, please run as root!"
   print
   print """Options:\n
--h\t\tHelp Message
--t\t\tTarget- enter the IP adress to scan
--p\t\tPort- enter the port to scan
--i\t\tICMP Sweep- Will do a ping sweep on the subnet to find hosts
--v\t\tVerbose- gives added output
--V\t\tVersion- print the version of this port scanner
+ -h\t\tHelp Message
+--pl\t\tPort List- enter a range of ports (ex. 1-1000)
 
--i\t\tICMP Ping Sweep- Enter the subnet you wish to sweep in CIDR notation
+For Scanning a single target:
+ -t\t\tTarget- enter the IP adress to scan
+ -p\t\tPort- enter the port to scan
+--single\tSpecify one host to be scanned
+
+Types of Scans:
+--sS\t\tStealth Scan
+--sU\t\tUDP Scan
+ -T\t\tTraceroute
+ -i\t\tICMP Ping Sweep- Enter the subnet you wish to sweep in CIDR notation
+
+Miscellaneous:
+ -v\t\tVerbose- gives added output
+ -V\t\tVersion- print the version of this port scanner
+
 """
 
 if __name__ == "__main__":
