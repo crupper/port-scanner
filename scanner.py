@@ -23,7 +23,7 @@ def main():
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:V", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test="])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VT", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single"])
         # Intro message
     except getopt.GetoptError as err:
         # print help information and exit:
@@ -32,11 +32,15 @@ def main():
         sys.exit(2)
     output = None
     verbose = False
+    stealth = False
+    udp_option = False
+    tracert = False
+    check = False
+    single_target = False
     for o, a in opts:
         if o == "-v":
             verbose = True
         elif o in ("-h", "--help"):
-            # usage()
             print_help_message()
             sys.exit()
         elif o in ("-V", "--version"):
@@ -44,33 +48,54 @@ def main():
             sys.exit()
         elif o in ("-t", "--target"):
             target = a
-            # print target
         elif o in ("-p", "--port"):
             port = a
-            # print port
         elif o in ("-i", "--icmp_sweep"):
             #print target
             #print port
             ping_sweep(a)
             sys.exit()
         elif o in ("--test"):
-            create_list_of_hosts(a)
+            ping_host(a)
             sys.exit()
+        elif o in ("--sS"):
+            print "Stealth Scan"
+            stealth = True
+        elif o in ("--sU"):
+            udp_option = True
+        elif o in ("-T"):
+            tracert = True
+        elif o in ("--check"):
+            check = True
+        elif o in ("--single"):
+            single_target = True
         else:
             assert False, "unhandled option"
-    # ...
     # Basically main begins here:
-    print "Starting scan"
-
-    if (target != localhost):
-#        icmp_ping(target)
-#       checkhost(target)
-#        stealth_scan(target, port)
-        udp_scan(target,port)
-#        traceroute(hostname)
+    #Single Targets
+    if single_target:
+        if (target != localhost):
+            if check:
+                checkhost(target)
+                sys.exit()
+            if stealth:
+                stealth_scan(target, port)
+            if udp_option:
+                udp_scan(target,port)
+            if tracert:
+                traceroute(hostname)
+        else:
+            print "Error! Improper use of arguments!" 
+            print "Please view \'-h\' for usage information."
     else:
-        print "Error! Improper use of arguments!" 
-        print "Please view \'-h\' for usage information."
+    #Range of Targets
+        the_hostlist = create_list_of_hosts(target)
+        if stealth:
+            for host in the_hostlist:
+                stealth_scan(host, port)
+
+
+# Functions
 
 def tcp_scan(given_target, given_port):
     dst_ip = given_target
@@ -112,30 +137,24 @@ def udp_scan(given_target, given_port):
 
 
 def checkhost(ip): # Function to check if target is up
-        conf.verb = 0 # Hide output
-        try:
-                ping = sr1(IP(dst = ip)/ICMP()) # Ping the target
-                print "\n[*] Target is Up, Beginning Scan..."
-        except Exception: # If ping fails
-                print "\n[!] Couldn't Resolve Target"
-                print "[!] Exiting..."
-                sys.exit(1)
+    ping_host(ip)
+    sys.exit(1)
 
-
-def icmp_ping(host):
-    ''' ICMP Ping '''
-    print "Host to Ping: " + host
-    # Classical ICMP Ping can be emulated using the following command:
-    ans, unans = sr(IP(dst=host)/ICMP())
-
-    # Information on live hosts can be collected with the following request:
-    ans.summary(lambda (s, r): r.sprintf("%IP.src% is alive"))
+def ping_host(host):
+    TIMEOUT = 2
+    packet = IP(dst=host, ttl=20)/ICMP()
+    reply = sr1(packet, timeout=TIMEOUT)
+    if not (reply is None):
+        print reply.src, "is online"
+    else:
+        print "Timeout waiting for %s" % packet[IP].dst
 
 def ping_sweep(target_subnet):
     # this takes the subnet, and runs a ping on each host in that subnet
     hostlist = create_list_of_hosts(target_subnet)
+    # print hostlist
     for host in hostlist:
-        icmp_ping(host)
+        ping_host(host)
 
 def traceroute(hostname):
     for i in range(1, 28):
@@ -174,22 +193,25 @@ def find_max_octet(octet):
         return "0"
 
 def create_list_of_hosts(host_with_subnet):
+#    print "Creating list of hosts:"
     subnet = host_with_subnet.split("/")
-    print subnet
+    #print subnet
     splitter = subnet[0].split(".")
     init_string = splitter[0]+"."+splitter[1]+"."+splitter[2]+"."
-    print "init_string = " + init_string
+    #print "init_string = " + init_string
     tail_octet = 0
     max_octet = int(find_max_octet(subnet[1]))
-    print subnet[0]
-    print subnet[1]
+#    print subnet[0]
+#    print subnet[1]
     hostlist = []
     for x in range(int(splitter[3]),max_octet+1):
         hostlist.append(init_string+str(x))
 
+#    print hostlist
     #testing:
-    for host in hostlist:
-        print host
+#    for host in hostlist:
+#        print host
+
     return hostlist
   
 
@@ -203,6 +225,8 @@ def print_help_message():
 -i\t\tICMP Sweep- Will do a ping sweep on the subnet to find hosts
 -v\t\tVerbose- gives added output
 -V\t\tVersion- print the version of this port scanner
+
+-i\t\tICMP Ping Sweep- Enter the subnet you wish to sweep in CIDR notation
 """
 
 if __name__ == "__main__":
