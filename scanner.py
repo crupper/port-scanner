@@ -23,11 +23,9 @@ def main():
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
         opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VTr:", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single", "pl="])
-        # Intro message
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
-        # usage()
         sys.exit(2)
     output = None
     stealth = False
@@ -82,7 +80,7 @@ def main():
     the_portlist = []
     if portRangeIsGiven:
         the_portlist = create_list_of_ports(raw_pl)
-    #Single Targets
+    # Single Targets
     if single_target:
         if (target != localhost):
             if check:
@@ -104,7 +102,7 @@ def main():
             print "Error! Improper use of arguments!" 
             print "Please view \'-h\' for usage information."
     else:
-    #Range of Targets
+    # Multiple Targets
         if rangeIsGiven:
             the_hostlist = create_range_list(host_range)
         else:
@@ -115,14 +113,12 @@ def main():
                     stealth_scan(host, port)
                 else:
                     handle_stealth_scan(host,the_portlist)
-
         if udp_option:
             for host in the_hostlist:
                 if single_port:
                     udp_scan(host, port)
                 else:
                     handle_udp_scan(host, the_portlist)
-
         if tracert:
             for host in the_hostlist:
                 traceroute(host)
@@ -130,6 +126,7 @@ def main():
 
 # Functions
 
+# tcp_scan is not functional yet and does not get called
 def tcp_scan(given_target, given_port):
     dst_ip = given_target
     # src_port = RandShort()
@@ -150,6 +147,7 @@ def tcp_scan(given_target, given_port):
 
 
 def stealth_scan(given_target, given_port):
+    # Uses Scapy to perform a stealth tcp scan
     ans = sr1(IP(dst=given_target) /TCP(dport=int(given_port)), timeout=1,verbose=0)
     if ans == None:
         pass
@@ -160,23 +158,28 @@ def stealth_scan(given_target, given_port):
             print given_port + " is closed on "+ given_target
             pass
 
+# handle multiple ports given
 def handle_stealth_scan(host,portlist):
     for port in portlist:
         stealth_scan(host, port)
 
 def udp_scan(given_target, given_port):
+    # Uses Scapy to perform UDP scan
     ans = sr1(IP(dst=given_target) /UDP(dport = int(given_port)), timeout=5,verbose=0)
+    # wait for a response
     time.sleep(1)
     if ans == None:
         print given_port + " is open on "+ given_target
     else:
         pass
 
+# handle multiple ports given
 def handle_udp_scan(host, portlist):
     for port in portlist:
         udp_scan(host, port)
 
-def checkhost(ip): # Function to check if target is up
+def checkhost(ip): 
+    # Function to check if target is up
     ping_host(ip)
     sys.exit(1)
 
@@ -196,22 +199,23 @@ def ping_sweep(target_subnet):
     for host in hostlist:
         ping_host(host)
 
+# Uses Scapy to implement Traceroute
 def traceroute(hostname):
     for i in range(1, 28):
         pkt = IP(dst=hostname, ttl=i) / UDP(dport=33434)
-        # Send the packet and get a reply
+        # Send and recieve one packet
         reply = sr1(pkt, verbose=0)
         if reply is None:
             # No reply =(
             break
         elif reply.type == 3:
-            # We've reached our destination
             print "Done!", reply.src
             break
         else:
-            # We're in the middle somewhere
+            # List distance from source
             print "%d hops away: " % i , reply.src
 
+# returns proper octet for CIDR
 def find_max_octet(octet):
     if octet == "24":
         return "255"
@@ -232,49 +236,47 @@ def find_max_octet(octet):
     elif octet =="32":
         return "0"
 
+# Takes the CIDR address given and returns list of IP address to target
 def create_list_of_hosts(host_with_subnet):
 #    print "Creating list of hosts:"
     subnet = host_with_subnet.split("/")
-    #print subnet
     splitter = subnet[0].split(".")
     init_string = splitter[0]+"."+splitter[1]+"."+splitter[2]+"."
-    #print "init_string = " + init_string
     tail_octet = 0
     max_octet = int(find_max_octet(subnet[1]))
-#    print subnet[0]
-#    print subnet[1]
     hostlist = []
+    # Once split, build the list
     for x in range(int(splitter[3]),max_octet+1):
         hostlist.append(init_string+str(x))
 
-#    print hostlist
-    #testing:
-#    for host in hostlist:
-#        print host
-
     return hostlist
   
+# Takes the range given and returns list of IP address to target
 def create_range_list(range_of_hosts):
     #Expected input: 192.168.207.41-42
     hostlist = []
     ip_split = range_of_hosts.split("-")
-    # print ip_split[0] + " and " + ip_split[1]
     splitter = ip_split[0].split(".")
     init_string = splitter[0]+"."+splitter[1]+"."+splitter[2]+"."
+    # Once split, build the list
     for x in range(int(splitter[3]),int(ip_split[1])+1):
         hostlist.append(init_string+str(x))
     print hostlist
     return hostlist
 
+# This function returns a list of strings (ports)
 def create_list_of_ports(raw_pl):
     #Expected input: 1-1000
     portlist = []
     portEnds = raw_pl.split("-")
+    # Once split, build the list
     for x in range(int(portEnds[0]),int(portEnds[1])+1):
         portlist.append(str(x))
     print portlist
     return portlist
 
+
+# Displays the options for help
 def print_help_message():
   print "To use the full capabilities of this program, please run as root!"
   print
@@ -301,11 +303,4 @@ Miscellaneous:
 
 if __name__ == "__main__":
     main()
-
-
-# more things to implement:
-#   dig
-#   arp?
-#   ping
-#   
 

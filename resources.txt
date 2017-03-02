@@ -6,3 +6,9 @@ Scapy:
 	http://resources.infosecinstitute.com/port-scanning-using-scapy/#gref
     Kali Linux Network Scanning Cookbook by Justin Hutchens
     https://securitylair.wordpress.com/2014/02/21/simple-port-scanner-in-python-with-scapy-2/
+
+Random Bugs:
+    http://stackoverflow.com/questions/3887381/typeerror-nonetype-object-is-not-iterable-in-python
+
+CIDR:
+    https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
