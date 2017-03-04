@@ -12,3 +12,7 @@ Random Bugs:
 
 CIDR:
     https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing
+
+
+Miscellaneous notes:
+    The --single argument could be done away with if -t has a value, then it is a single IP

@@ -22,7 +22,7 @@ def main():
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VTr:", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single", "pl="])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VTr:", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single", "pl=", "os"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -36,6 +36,7 @@ def main():
     single_port = False
     rangeIsGiven = False
     portRangeIsGiven = False
+    check_os = False
     for o, a in opts:
         if o == "-v":
             print "Verbosity has yet to be implemeted"
@@ -73,6 +74,8 @@ def main():
         elif o in ("--pl"):
             raw_pl = a
             portRangeIsGiven = True
+        elif o in ("--os"):
+            check_os = True
         else:
             assert False, "unhandled option"
     # Basically main begins here:
@@ -122,6 +125,13 @@ def main():
         if tracert:
             for host in the_hostlist:
                 traceroute(host)
+    #check if OS detection is desired //nt
+    if check_os:
+        if (target != localhost):
+            os_detection(target)
+        else:
+            for host in the_hostlist:
+                os_detection(host)
 
 
 # Functions
@@ -214,6 +224,17 @@ def traceroute(hostname):
         else:
             # List distance from source
             print "%d hops away: " % i , reply.src
+
+def os_detection(hostname):
+    ans = sr1(IP(dst=hostname) /ICMP(), timeout=1, verbose=0)
+    # The difference between Windows and Linux is the Standard TTL value
+    # 64 on Linux, 128 on Windows 
+    if ans ==None:
+        print "No response returned"
+    elif (int(ans[IP].ttl) <= 64):
+        print "Host: " + hostname + " is a Linux/Unix machine"
+    else:
+        print "Host: " + hostname + " is a Windows machine"
 
 # returns proper octet for CIDR
 def find_max_octet(octet):
