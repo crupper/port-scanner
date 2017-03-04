@@ -315,6 +315,7 @@ Types of Scans:
 --sU\t\tUDP Scan
  -T\t\tTraceroute
  -i\t\tICMP Ping Sweep- Enter the subnet you wish to sweep in CIDR notation
+--os\t\tOS Detection - enter one IP with -t or a range with -r
 
 Miscellaneous:
  -v\t\tVerbose- gives added output

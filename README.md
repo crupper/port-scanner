@@ -10,6 +10,7 @@ ICMP - Ping Sweep
 
 Traceroute
 
+OS Detection
 
 
 ######Created by: Chris Rupper
