@@ -22,7 +22,7 @@ def main():
     try:
         # To add an option, add the short options to the list and add a ":" or a "="
         # to signal that there is additional input is expected
-        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VTr:", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single", "pl=", "os"])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:vt:p:i:VTr:x", ["help", "output=", "target=", "port=", "icmp_sweep=", "version", "test=", "sS", "sU", "check", "single", "pl=", "os", "xmas"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print str(err)  # will print something like "option -a not recognized"
@@ -37,6 +37,7 @@ def main():
     rangeIsGiven = False
     portRangeIsGiven = False
     check_os = False
+    run_xmas = False
     for o, a in opts:
         if o == "-v":
             print "Verbosity has yet to be implemeted"
@@ -76,6 +77,8 @@ def main():
             portRangeIsGiven = True
         elif o in ("--os"):
             check_os = True
+        elif o in ("-x", "--xmas"):
+            run_xmas = True
         else:
             assert False, "unhandled option"
     # Basically main begins here:
@@ -99,6 +102,11 @@ def main():
                     udp_scan(target,port)
                 else:
                     handle_udp_scan(target, the_portlist)
+            if run_xmas:
+                if single_port:
+                    xmas_scan(target, port)
+                else:
+                    handle_xmas_scan(target, the_portlist)
             if tracert:
                 traceroute(hostname)
         else:
@@ -122,6 +130,12 @@ def main():
                     udp_scan(host, port)
                 else:
                     handle_udp_scan(host, the_portlist)
+        if run_xmas:
+            for host in the_hostlist:
+                if single_port:
+                    xmas_scan(host, port)
+                else:
+                    handle_xmas_scan(host, the_portlist)
         if tracert:
             for host in the_hostlist:
                 traceroute(host)
@@ -236,6 +250,25 @@ def os_detection(hostname):
     else:
         print "Host: " + hostname + " is a Windows machine"
 
+# This function simply handles multiple ports for the xmas scan
+def handle_xmas_scan(host, portlist):
+    for port in portlist:
+        xmas_scan(host, port)
+
+# The xmas_scan gets its name from  the flags within packets
+# the flags would alternate from 0 to 1 or "blink"
+# the scan will send a RST packet when a flawed TCP packet is returned
+def xmas_scan(given_target, given_port):
+    src_port = RandShort()
+    response = sr1(IP(dst=given_target)/TCP(dport=given_port, flags="FPU"), timeout=10)
+    if(str(type(response)) == "<type 'NoneType'>"):
+        print "Host: " + given_target + " is Open|Filtered on port: " + given_port
+    elif(response.getlayer(TCP).flags == 0x14):
+        print "Host: " + given_target + " is Closed on port: " + given_port
+    elif(response.haslayer(ICMP)):
+        if(int(response.getlayer(ICMP).code) in [1,2,3,9,10,13]):
+            print "Host: " + given_target + " is filtered on port: " + given_port
+
 # returns proper octet for CIDR
 def find_max_octet(octet):
     if octet == "24":
@@ -315,6 +348,7 @@ Types of Scans:
 --sU\t\tUDP Scan
  -T\t\tTraceroute
  -i\t\tICMP Ping Sweep- Enter the subnet you wish to sweep in CIDR notation
+ -x\t\tXmas Scan
 --os\t\tOS Detection - enter one IP with -t or a range with -r
 
 Miscellaneous:
